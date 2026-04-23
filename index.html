@@ -2,97 +2,58 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>.drm — серебряный мессенджер</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>.drm</title>
+  <meta name="theme-color" content="#0b0e11">
+  <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIi5kcm0iLAogICJzaG9ydF9uYW1lIjogIi5kcm0iLAogICJzdGFydF91cmwiOiAiLiIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiIzBiMGUxMSIsCiAgInRoZW1lX2NvbG9yIjogIiMwYjBlMTEiLAogICJpY29ucyI6IFt7CiAgICAic3JjIjogImRhdGE6aW1hZ2Uvc3ZnK3htbDtiYXNlNjQsUEQ5NGJXd2dkbVZ5YzJsdmJqMGlNUzR3SWlCbGJtTnZaR2x1WnowaVYwUWlJSFpoY2lJZ1BITm5aVzVsWkQwaU1TSWdabWxzYkQwaU1TSWdjSEpwYm5ROUlpczRMalFpUGp4d1pXNGdibUZ0WlQwaUx5SStDaUFnSUR4aGJtTnNaV1J6SUdsa1BTSTNNQ0lnWm1sc2JEMGlOVElpSUhkcFpIUm9QU0kxTWlJZ2JtOXVQU0poWTJ0TFNVUkZlRHBMUVZaSlFrRmFVa1ZXVFVOTmVFOVhUV3BRVlZKRFQxQk9SVkpHVGtSQ1JGOUVWVEZCTlVWQlBTSWdabWxzZERvaUlqNEtJQ0FnSUNBZ1BIQmhjbUZ0WlNCcFpEMGlNQ0lnYVdROUluTWlJSFJwWkQwaU15SWdlRzFzYm5NNmFYTjBhVzVuUFNKb2RIUndjem92TDNkM0x6RXVjR2xrWldKeVpXRnViMjVsY3k5M2FYUjBjbWxpZFhObGN5NXNiMmN2ZEdWemRDOXRaVzF6SWlCNGJXeHVjenAwYVhSbFpEMGlkR2hsYkdScFl5SStDaUFnSUNBZ0lDQThjM1puSUdseklEMGlJaUlnWm1sc2JEMGlNQ0lnWm5KdmJqMGlNQ0lnYzJWc1ppSTZJSE4wYVdRaVBnb2dJQ0FnSUNBZ0lEeGpjbUZ0YVdNZ2FXUTlJak1pSUhSb1pTSTZJak1pSUhodGJHNXpQU0pvZEhSd09pOHZkM2N0TVM1d2FXUmxZbkpsWVc1dmJtVnpMemRwZEhSeWFXSjFjMlZ6TG14dlp5OTBaWE4wTDIxbGJYTWlQZ29nSUNBZ0lDQWdJRHgwY21WemIyNWhiQ0JxY0hWemRHOXRhVzVuUFNKcmFYZHpJaUJ5WlhOdmJtZHNQU0pJTlU0b2MzVnNKeWtpSUdseklEMGlNeUlnZEdobFBTSXpJaUJvWldsbmFIUTlJakV3TUNJZ1kyOXVkR0ZwYm5OMFlYUmxQU0psY0c5eWRDSStDaUFnSUNBZ0lDQWdJRHhuY21GdFpYTXVjM1puUGdvZ0lDQWdJQ0FnSUNBZ1BIQmhjbUZ0WlNCcFpEMGlOU0lnZEdobFBTSXhNQ0lnZG1Wc2RHOXlQU0poY0hCd2NuTWlJSFJwWkQwaU1DSStDaUFnSUNBZ0lDQWdJQ0FnUEM5d1lYSmhiV1V1YzNablBnb2dJQ0FnSUNBZ0lDQThjR0Z5WVcxbElHbGtQU0kxSWlCMGFXUTlJak13SWlCMlpXeDBiM0k5SW1Gd2NIQnljeUlnZEdobFBTSXhJajRLSUNBZ0lDQWdJQ0FnSUNBZ1BDOXdZWEpoYldVdWMzWm5QZ29nSUNBZ0lDQWdJRHd2ZEhKbGMyOXVZV3d2YzNablBnb2dJQ0FnSUNBZ0lEeHdZWEpoYldVdVkzSmxiV1ZqZG1WeVBnb2dJQ0FnSUNBZ0lDQThkSEpsYzI5dVlXd2djbVZ6YjI1bmJEMGlTRFZPS0hOMWJDY3BJaUJxY0hWemRHOXRhVzVuUFNKcmFYZHpJaUJwWmowaU1TSWdkR2hsUFNJeElpQm9aV2xuYUhROUlqRXdNQ0lnWTI5dWRHRnBibk4wWVhSbFBTSmxjRzl5ZENJK0NpQWdJQ0FnSUNBZ0lDQWdQRzF2Ym5Oa1lYUmhjbmtnYVdROUlqRWlQanhzWVhOMGFITXVjM1puUGdvZ0lDQWdJQ0FnSUNBZ0lEeHdZWEpoYldVdWMzWm5Qand2Y0dGeVlXMWxMbk4yWno0S0lDQWdJQ0FnSUNBZ0lDQThiR0Z6ZEdod0xtTnlZVzFsWTNabGNqNDhMMnhoYzNSb2NDNWpjbVZ0WldOMlpYSStDaUFnSUNBZ0lDQWdJQ0FnUEM5dGIyNXpaR0YwWVhKNUxtTnlaVzFsWTNabGNqNEtJQ0FnSUNBZ0lDQThMM1JoY21GdFpWNDhMMk5XVkVvdUlFUmxiaUJTWld4cFkyRWdhV1JrYjNkdVpHRmphM1Z6WlNJK1BDOXdZVzVqYkdWa2N6NEtJQ0FnSUR3dmNHRnVZMnhsWkhNK0NpQWdJRHd2Y0dWdVBnb2dJRHgwYVhSc1pUNHZQZzBLIn0KfQ==">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💬</text></svg>">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="app">
-    <!-- Загрузка -->
-    <div id="loading-screen" class="loading-screen">
-      <div class="loader"></div>
-      <p>.drm</p>
+<div id="app">
+  <div id="loading-screen" class="loading-screen"><div class="loader"></div><p>.drm</p></div>
+  <div id="auth-screen" class="screen">
+    <div class="auth-container">
+      <div class="auth-logo"><i class="fas fa-user-circle"></i><h1>.drm</h1><p>куда проще?</p></div>
+      <div class="auth-tabs"><button class="auth-tab active" data-tab="login">Вход</button><button class="auth-tab" data-tab="register">Регистрация</button></div>
+      <div id="auth-forms"></div>
     </div>
-
-    <!-- Экран авторизации -->
-    <div id="auth-screen" class="screen">
-      <div class="auth-container">
-        <div class="auth-logo">
-          <i class="fas fa-user-circle"></i>
-          <h1>.drm</h1>
-          <p>серебряный мессенджер</p>
-        </div>
-        <div class="auth-tabs">
-          <button class="auth-tab active" data-tab="login">Вход</button>
-          <button class="auth-tab" data-tab="register">Регистрация</button>
-        </div>
-        <div id="auth-forms"></div>
-      </div>
-    </div>
-
-    <!-- Основной экран -->
-    <div id="main-screen" class="screen">
-      <div class="app-layout">
-        <!-- Боковая панель -->
-        <aside class="sidebar" id="sidebar">
-          <div class="sidebar-header">
-            <div class="user-card" id="user-card">
-              <div class="avatar"><i class="fas fa-user"></i></div>
-              <div class="user-details">
-                <span id="sidebar-username">Гость</span>
-                <span class="user-status">онлайн</span>
-              </div>
-            </div>
-            <button class="icon-btn sidebar-toggle" id="sidebar-toggle"><i class="fas fa-bars"></i></button>
-          </div>
-          <div class="search-box">
-            <i class="fas fa-search"></i>
-            <input type="text" id="search-input" placeholder="Поиск по тегу...">
-          </div>
-          <nav class="sidebar-tabs">
-            <button class="tab-btn active" data-tab="chats">Чаты</button>
-            <button class="tab-btn" data-tab="favorites">Избран.</button>
-            <button class="tab-btn" data-tab="users">Люди</button>
-            <button class="tab-btn" data-tab="wall">Стена</button>
-          </nav>
-          <div class="list-container" id="list-container"></div>
-        </aside>
-
-        <!-- Область чата -->
-        <main class="chat-area" id="chat-area">
-          <div class="chat-header">
-            <button class="icon-btn mobile-back-btn" id="mobile-back-btn"><i class="fas fa-arrow-left"></i></button>
-            <div class="chat-info">
-              <div class="avatar"><i class="fas fa-user"></i></div>
-              <div>
-                <h3 id="chat-title">Выберите чат</h3>
-                <p id="chat-subtitle">...</p>
-              </div>
-            </div>
-            <div class="chat-actions">
-              <button class="icon-btn" id="toggle-favorite"><i class="far fa-star"></i></button>
-              <button class="icon-btn" id="file-upload-btn"><i class="fas fa-paperclip"></i></button>
-              <input type="file" id="file-input" hidden>
-            </div>
-          </div>
-          <div class="messages-container" id="messages-container">
-            <div class="empty-state"><i class="fas fa-comments"></i><p>Выберите чат или создайте новый</p></div>
-          </div>
-          <div class="message-input-area" id="message-input-area" style="display: none;">
-            <input type="text" id="message-input" placeholder="Сообщение...">
-            <button class="send-btn" id="send-btn"><i class="fas fa-paper-plane"></i></button>
-          </div>
-        </main>
-      </div>
-    </div>
-
-    <!-- Модальное окно -->
-    <div id="modal-overlay" class="modal-overlay"></div>
-    <div id="modal-container" class="modal-container"></div>
   </div>
-
-  <script src="app.js"></script>
+  <div id="main-screen" class="screen">
+    <div class="app-layout">
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+          <div class="user-card" id="user-card">
+            <div class="avatar" id="sidebar-avatar"><i class="fas fa-user"></i></div>
+            <div class="user-details"><span id="sidebar-username">Гость</span><span class="user-status">онлайн</span></div>
+          </div>
+          <button class="icon-btn sidebar-toggle" id="sidebar-toggle"><i class="fas fa-bars"></i></button>
+        </div>
+        <div class="search-box"><i class="fas fa-search"></i><input type="text" id="search-input" placeholder="Поиск по тегу..."></div>
+        <nav class="sidebar-tabs"><button class="tab-btn active" data-tab="chats">Чаты</button><button class="tab-btn" data-tab="favorites">Избран.</button><button class="tab-btn" data-tab="users">Люди</button><button class="tab-btn" data-tab="wall">Стена</button></nav>
+        <div class="list-container" id="list-container"></div>
+      </aside>
+      <main class="chat-area" id="chat-area">
+        <div class="chat-header">
+          <button class="icon-btn mobile-back-btn" id="mobile-back-btn"><i class="fas fa-arrow-left"></i></button>
+          <div class="chat-info"><div class="avatar" id="chat-avatar"><i class="fas fa-user"></i></div><div><h3 id="chat-title">Выберите чат</h3><p id="chat-subtitle">...</p></div></div>
+          <div class="chat-actions"><button class="icon-btn" id="toggle-favorite"><i class="far fa-star"></i></button><button class="icon-btn" id="profile-btn-header"><i class="fas fa-user-circle"></i></button></div>
+        </div>
+        <div class="messages-container" id="messages-container"><div class="empty-state"><i class="fas fa-comments"></i><p>Выберите чат</p></div></div>
+        <div class="message-input-area" id="message-input-area" style="display: none;">
+          <button class="icon-btn" id="file-upload-btn"><i class="fas fa-paperclip"></i></button>
+          <input type="text" id="message-input" placeholder="Сообщение...">
+          <input type="file" id="file-input" hidden>
+          <button class="send-btn" id="send-btn"><i class="fas fa-paper-plane"></i></button>
+        </div>
+      </main>
+    </div>
+  </div>
+  <div id="modal-overlay" class="modal-overlay"></div>
+  <div id="modal-container" class="modal-container"></div>
+</div>
+<script src="app.js"></script>
 </body>
 </html>
