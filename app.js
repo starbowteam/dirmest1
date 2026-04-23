@@ -1,56 +1,43 @@
 /*****************************************************
- * .DRM — СЕРЕБРЯНЫЙ МЕССЕНДЖЕР
- * Полная логика: регистрация, вход, чаты, избранное,
- * стена, поиск по тегу, отправка файлов, сворачивание
- * боковой панели, анимации, localStorage.
+ * .DRM — СЕРЕБРЯНЫЙ МЕССЕНДЖЕР (ТГ-СТИЛЬ)
+ * Избранное, стена, файлы, профиль, PWA
  *****************************************************/
-
-// ========== ХРАНИЛИЩЕ ==========
 const DB = {
   USERS: 'drm_users',
   CURRENT: 'drm_current',
   MESSAGES: 'drm_msgs',
   CHATS: 'drm_chats',
   WALL: 'drm_wall',
-  FAVORITES: 'drm_favorites'
+  PROFILES: 'drm_profiles'
 };
 
 function initDB() {
-  if (!localStorage.getItem(DB.USERS)) localStorage.setItem(DB.USERS, '[]');
-  if (!localStorage.getItem(DB.MESSAGES)) localStorage.setItem(DB.MESSAGES, '{}');
-  if (!localStorage.getItem(DB.CHATS)) localStorage.setItem(DB.CHATS, '{}');
-  if (!localStorage.getItem(DB.WALL)) localStorage.setItem(DB.WALL, '[]');
-  if (!localStorage.getItem(DB.FAVORITES)) localStorage.setItem(DB.FAVORITES, '[]');
+  for (let k of Object.values(DB)) {
+    if (!localStorage.getItem(k)) {
+      localStorage.setItem(k, (k === DB.MESSAGES || k === DB.CHATS || k === DB.PROFILES) ? '{}' : '[]');
+    }
+  }
 }
 initDB();
 
+// ========== УТИЛИТЫ ==========
+const genId = () => Date.now().toString(36) + Math.random().toString(36).substr(2,5);
+const formatTime = ts => new Date(ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+
+// ========== ДАННЫЕ ==========
 const getUsers = () => JSON.parse(localStorage.getItem(DB.USERS));
-const saveUser = user => {
-  const users = getUsers();
-  users.push(user);
-  localStorage.setItem(DB.USERS, JSON.stringify(users));
-};
+const saveUser = u => { const users = getUsers(); users.push(u); localStorage.setItem(DB.USERS, JSON.stringify(users)); };
 const findUserByTag = tag => getUsers().find(u => u.tag.toLowerCase() === tag.toLowerCase());
 const getCurrentUser = () => JSON.parse(localStorage.getItem(DB.CURRENT));
-const setCurrentUser = user => localStorage.setItem(DB.CURRENT, JSON.stringify(user));
+const setCurrentUser = u => localStorage.setItem(DB.CURRENT, JSON.stringify(u));
 const logout = () => localStorage.removeItem(DB.CURRENT);
 
 const getChats = () => JSON.parse(localStorage.getItem(DB.CHATS));
-const saveChat = chat => {
-  const chats = getChats();
-  chats[chat.id] = chat;
-  localStorage.setItem(DB.CHATS, JSON.stringify(chats));
-};
+const saveChat = chat => { const chats = getChats(); chats[chat.id] = chat; localStorage.setItem(DB.CHATS, JSON.stringify(chats)); };
 const getChat = id => getChats()[id];
-const getUserChatIds = userId => {
-  const all = getChats();
-  return Object.keys(all).filter(id => all[id].members.includes(userId));
-};
+const getUserChatIds = uid => Object.keys(getChats()).filter(id => getChat(id).members.includes(uid));
 
-const getMessages = chatId => {
-  const all = JSON.parse(localStorage.getItem(DB.MESSAGES));
-  return all[chatId] || [];
-};
+const getMessages = chatId => JSON.parse(localStorage.getItem(DB.MESSAGES))[chatId] || [];
 const saveMessage = (chatId, msg) => {
   const all = JSON.parse(localStorage.getItem(DB.MESSAGES));
   if (!all[chatId]) all[chatId] = [];
@@ -65,168 +52,113 @@ const addWallPost = post => {
   localStorage.setItem(DB.WALL, JSON.stringify(posts));
 };
 
-const getFavorites = () => JSON.parse(localStorage.getItem(DB.FAVORITES));
-const addFavorite = chatId => {
-  const favs = getFavorites();
-  if (!favs.includes(chatId)) {
-    favs.push(chatId);
-    localStorage.setItem(DB.FAVORITES, JSON.stringify(favs));
-  }
-};
-const removeFavorite = chatId => {
-  const favs = getFavorites().filter(id => id !== chatId);
-  localStorage.setItem(DB.FAVORITES, JSON.stringify(favs));
-};
-const isFavorite = chatId => getFavorites().includes(chatId);
-
-// ========== УТИЛИТЫ ==========
-const genId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
-const formatTime = ts => {
-  const d = new Date(ts);
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+const getProfile = uid => JSON.parse(localStorage.getItem(DB.PROFILES))[uid] || { bio: '', banner: '' };
+const saveProfile = (uid, data) => {
+  const profiles = JSON.parse(localStorage.getItem(DB.PROFILES));
+  profiles[uid] = { ...getProfile(uid), ...data };
+  localStorage.setItem(DB.PROFILES, JSON.stringify(profiles));
 };
 
-// ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
-let currentUser = null;
-let activeChatId = null;
-let activeTab = 'chats';
+// ========== ГЛОБАЛЬНЫЕ ==========
+let currentUser = null, activeChatId = null, activeTab = 'chats', pendingFile = null;
 
 // ========== UI ==========
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
-  const el = document.getElementById(id + '-screen');
-  if (el) el.style.display = (id === 'auth' ? 'flex' : 'block');
+  document.getElementById(id + '-screen').style.display = (id === 'auth' ? 'flex' : 'block');
 }
 
 function updateSidebar() {
   document.getElementById('sidebar-username').textContent = currentUser?.name || 'Гость';
-  document.getElementById('user-card').querySelector('.avatar i').className = 'fas fa-user';
+  const avatarEl = document.getElementById('sidebar-avatar');
+  avatarEl.innerHTML = currentUser?.avatar ? `<img src="${currentUser.avatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">` : '<i class="fas fa-user"></i>';
 }
 
-function renderList(containerId, items, type) {
-  const container = document.getElementById(containerId);
+function renderChatList() {
+  const container = document.getElementById('list-container');
   container.innerHTML = '';
-  if (!items.length) {
-    container.innerHTML = '<div style="padding:1rem;color:var(--text-secondary);text-align:center;">Пусто</div>';
+  if (activeTab === 'wall') {
+    renderWall();
     return;
   }
-  items.forEach(item => {
-    if (type === 'chat') {
-      const chat = item;
-      const otherId = chat.members.find(id => id !== currentUser.id);
-      const otherUser = otherId ? getUsers().find(u => u.id === otherId) : { name: 'Группа', avatar: 'G' };
-      const lastMsg = getMessages(chat.id).slice(-1)[0];
-      const el = document.createElement('данные');
-      el.className = 'chat-item' + (activeChatId === chat.id ? ' active-chat' : '') + (isFavorite(chat.id) ? ' favorite' : '');
-      el.innerHTML = `
-        <div class="avatar"><i class="fas fa-user"></i></div>
-        <div class="chat-info">
-          <div class="chat-name">${otherUser.name || 'Безымянный'}</div>
-          <div class="last-message">${lastMsg ? lastMsg.text : 'Нет сообщений'}</div>
-        </div>
-        <i class="fav-star fas fa-star"></i>
-      `;
-      el.addEventListener('click', () => openChat(chat.id));
+  if (activeTab === 'users') {
+    const users = getUsers().filter(u => u.id !== currentUser.id);
+    users.forEach(u => {
+      const el = document.createElement('div'); el.className = 'user-item';
+      el.innerHTML = `<div class="avatar"><i class="fas fa-user"></i></div><div><strong>${u.name}</strong><br><small>@${u.tag}</small></div>`;
+      el.addEventListener('click', () => startPrivateChat(u));
       container.appendChild(el);
-    } else if (type === 'user') {
-      const user = item;
-      const el = document.createElement('данные');
-      el.className = 'user-item';
-      el.innerHTML = `
-        <div class="avatar"><i class="fas fa-user"></i></div>
-        <div><strong>${user.name}</strong><br><small>@${user.tag}</small></div>
-      `;
-      el.addEventListener('click', () => startPrivateChat(user));
-      container.appendChild(el);
-    }
-  });
-}
-
-function renderMessages(chatId) {
-  const container = document.getElementById('messages-container');
-  const messages = getMessages(chatId);
-  if (!messages.length) {
-    container.innerHTML = '<div class="empty-state"><i class="fas fa-comments"></i><p>Нет сообщений</p></div>';
+    });
     return;
   }
-  container.innerHTML = messages.map(m => {
-    const isOwn = m.senderId === currentUser.id;
-    return `
-      <div class="message-row ${isOwn ? 'own' : ''}">
-        <div class="message-avatar"><i class="fas fa-user"></i></div>
-        <div class="message-bubble">
-          ${m.text}
-          ${m.file ? `<div class="file-attachment"><i class="fas fa-file"></i> ${m.file.name}</div>` : ''}
-          <div class="message-meta">${formatTime(m.timestamp)}</div>
-        </div>
-      </div>
+  let chatIds;
+  if (activeTab === 'favorites') {
+    chatIds = getUserChatIds(currentUser.id).filter(id => getChat(id).favorite);
+  } else {
+    chatIds = getUserChatIds(currentUser.id).filter(id => !getChat(id).isWall);
+  }
+  chatIds.forEach(id => {
+    const chat = getChat(id);
+    const otherId = chat.members.find(m => m !== currentUser.id);
+    const other = otherId ? getUsers().find(u => u.id === otherId) : { name: 'Избранное', avatar: null };
+    const lastMsg = getMessages(id).slice(-1)[0];
+    const el = document.createElement('div'); el.className = 'chat-item' + (activeChatId === id ? ' active-chat' : '');
+    el.innerHTML = `
+      <div class="avatar">${other.avatar ? `<img src="${other.avatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">` : '<i class="fas fa-user"></i>'}</div>
+      <div class="chat-info"><div class="chat-name">${other.name || 'Группа'}</div><div class="last-message">${lastMsg ? lastMsg.text : 'Нет сообщений'}</div></div>
+      ${chat.favorite ? '<i class="fas fa-star fav-star"></i>' : ''}
     `;
-  }).join('');
-  container.scrollTop = container.scrollHeight;
+    el.addEventListener('click', () => openChat(id));
+    container.appendChild(el);
+  });
 }
 
 function renderWall() {
-  const container = document.getElementById('messages-container');
+  document.getElementById('chat-title').textContent = 'Общая стена';
+  document.getElementById('chat-subtitle').textContent = 'Последние записи';
+  document.getElementById('message-input-area').style.display = 'flex';
   const posts = getWallPosts();
-  if (!posts.length) {
-    container.innerHTML = '<div class="empty-state"><i class="fas fa-newspaper"></i><p>Стена пуста</p></div>';
-    return;
-  }
-  container.innerHTML = posts.map(p => `
+  const container = document.getElementById('messages-container');
+  container.innerHTML = posts.length ? posts.map(p => `
     <div class="wall-post">
-      <div class="post-header">
-        <div class="avatar"><i class="fas fa-user"></i></div>
-        <div>
-          <div class="post-author">${p.authorName}</div>
-          <div class="post-time">${formatTime(p.timestamp)}</div>
-        </div>
-      </div>
-      <div class="post-content">${p.content}</div>
-      <div class="post-actions">
-        <span><i class="far fa-heart"></i> ${p.likes}</span>
-        <span><i class="far fa-comment"></i></span>
-      </div>
+      <div class="post-header"><div class="avatar"><i class="fas fa-user"></i></div><div><div class="post-author">${p.authorName}</div><div class="post-time">${formatTime(p.timestamp)}</div></div></div>
+      <div>${p.content}</div>
+      <div class="post-actions"><span><i class="far fa-heart"></i> ${p.likes||0}</span></div>
     </div>
-  `).join('');
+  `).join('') : '<div class="empty-state"><i class="fas fa-newspaper"></i><p>Пусто</p></div>';
 }
 
-function openChat(chatId) {
-  activeChatId = chatId;
-  const chat = getChat(chatId);
+function openChat(id) {
+  activeChatId = id;
+  const chat = getChat(id);
   if (!chat) return;
-  const otherId = chat.members.find(id => id !== currentUser.id);
-  const otherUser = otherId ? getUsers().find(u => u.id === otherId) : { name: 'Группа', avatar: 'G' };
-  document.getElementById('chat-title').textContent = otherUser?.name || 'Группа';
+  const otherId = chat.members.find(m => m !== currentUser.id);
+  const other = otherId ? getUsers().find(u => u.id === otherId) : { name: 'Избранное', avatar: null };
+  document.getElementById('chat-title').textContent = other?.name || 'Чат';
   document.getElementById('chat-subtitle').textContent = 'онлайн';
   document.getElementById('message-input-area').style.display = 'flex';
-  document.getElementById('toggle-favorite').innerHTML = isFavorite(chatId) ? '<i class="fas fa-star"></i>' : '<i class="far fa-star"></i>';
-  renderMessages(chatId);
+  document.getElementById('toggle-favorite').innerHTML = chat.favorite ? '<i class="fas fa-star"></i>' : '<i class="far fa-star"></i>';
+  renderMessages(id);
   document.querySelectorAll('.chat-item').forEach(el => el.classList.remove('active-chat'));
-  const activeEl = [...document.querySelectorAll('.chat-item')].find(el => el.dataset.chatId === chatId);
+  const activeEl = [...document.querySelectorAll('.chat-item')].find(el => el.dataset.chatId === id);
   if (activeEl) activeEl.classList.add('active-chat');
-  if (window.innerWidth <= 768) {
-    document.getElementById('sidebar').classList.remove('mobile-visible');
-  }
+  if (window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('mobile-visible');
 }
 
-function startPrivateChat(targetUser) {
-  const existingChatId = Object.keys(getChats()).find(id => {
-    const chat = getChat(id);
-    return chat.members.includes(currentUser.id) && chat.members.includes(targetUser.id) && !chat.isGroup;
-  });
-  if (existingChatId) {
-    openChat(existingChatId);
-    return;
-  }
-  const newChatId = genId();
-  const chat = {
-    id: newChatId,
-    members: [currentUser.id, targetUser.id],
-    isGroup: false,
-    createdAt: Date.now()
-  };
-  saveChat(chat);
-  openChat(newChatId);
+function renderMessages(chatId) {
+  const msgs = getMessages(chatId);
+  const container = document.getElementById('messages-container');
+  container.innerHTML = msgs.length ? msgs.map(m => {
+    const own = m.senderId === currentUser.id;
+    return `<div class="message-row ${own ? 'own' : ''}">
+      <div class="message-avatar"><i class="fas fa-user"></i></div>
+      <div class="message-bubble">
+        ${m.text} ${m.file ? `<div class="file-attachment"><i class="fas fa-file"></i> ${m.file.name}</div>` : ''}
+        <div class="message-meta">${formatTime(m.timestamp)}</div>
+      </div>
+    </div>`;
+  }).join('') : '<div class="empty-state"><i class="fas fa-comments"></i><p>Нет сообщений</p></div>';
+  container.scrollTop = container.scrollHeight;
 }
 
 function sendMessage() {
@@ -234,7 +166,6 @@ function sendMessage() {
   const input = document.getElementById('message-input');
   const text = input.value.trim();
   if (!text && !pendingFile) return;
-  
   const msg = {
     id: genId(),
     chatId: activeChatId,
@@ -247,249 +178,200 @@ function sendMessage() {
   pendingFile = null;
   input.value = '';
   renderMessages(activeChatId);
-  document.getElementById('file-upload-btn').classList.remove('has-file');
 }
 
-let pendingFile = null;
+function startPrivateChat(targetUser) {
+  const existingId = Object.keys(getChats()).find(id => {
+    const c = getChat(id);
+    return c.members.includes(currentUser.id) && c.members.includes(targetUser.id) && !c.isGroup;
+  });
+  if (existingId) { openChat(existingId); return; }
+  const newId = genId();
+  saveChat({ id: newId, members: [currentUser.id, targetUser.id], isGroup: false, favorite: false });
+  openChat(newId);
+}
 
-function handleFileSelect(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  pendingFile = { name: file.name, type: file.type, size: file.size };
-  document.getElementById('file-upload-btn').classList.add('has-file');
-  const input = document.getElementById('message-input');
-  input.placeholder = `Файл: ${file.name}`;
+function createFavoriteChat() {
+  if (!currentUser) return;
+  const favId = 'fav_' + currentUser.id;
+  if (!getChat(favId)) {
+    saveChat({ id: favId, members: [currentUser.id], isGroup: false, favorite: true, name: 'Избранное' });
+  }
+  openChat(favId);
 }
 
 // ========== АВТОРИЗАЦИЯ ==========
 function renderAuthForms() {
-  const tabs = document.querySelectorAll('.auth-tab');
-  tabs.forEach(t => t.addEventListener('click', () => {
-    tabs.forEach(b => b.classList.remove('active'));
-    t.classList.add('active');
-    t.dataset.tab === 'login' ? renderLoginForm() : renderRegisterForm();
-  }));
-  renderLoginForm();
+  document.querySelectorAll('.auth-tab').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.auth-tab').forEach(b => b.classList.remove('active'));
+      t.classList.add('active');
+      t.dataset.tab === 'login' ? renderLogin() : renderRegister();
+    });
+  });
+  renderLogin();
 }
 
-function renderLoginForm() {
-  const container = document.getElementById('auth-forms');
-  container.innerHTML = `
+function renderLogin() {
+  document.getElementById('auth-forms').innerHTML = `
     <form id="login-form" class="form">
-      <div class="input-group">
-        <label>Тег</label>
-        <input type="text" id="login-tag" placeholder="ваш_тег" required>
-      </div>
-      <div class="input-group">
-        <label>Пароль</label>
-        <input type="password" id="login-password" placeholder="••••••" required>
-      </div>
+      <div class="input-group"><label>Тег</label><input type="text" id="login-tag" required></div>
+      <div class="input-group"><label>Пароль</label><input type="password" id="login-password" required></div>
       <div class="error-msg" id="login-error"></div>
       <button type="submit" class="btn-primary">Войти</button>
-    </form>
-  `;
-  document.getElementById('login-form').addEventListener('submit', async (e) => {
+    </form>`;
+  document.getElementById('login-form').addEventListener('submit', e => {
     e.preventDefault();
     const tag = document.getElementById('login-tag').value.trim();
     const pass = document.getElementById('login-password').value;
-    const err = document.getElementById('login-error');
     const user = findUserByTag(tag);
-    if (!user || user.password !== pass) {
-      err.textContent = 'Неверный тег или пароль';
-      return;
-    }
-    currentUser = { id: user.id, name: user.name, tag: user.tag, avatar: user.avatar };
+    if (!user || user.password !== pass) return document.getElementById('login-error').textContent = 'Неверный тег или пароль';
+    currentUser = { id: user.id, name: user.name, tag: user.tag, avatar: user.avatar || null };
     setCurrentUser(currentUser);
-    goToMain();
+    goMain();
   });
 }
 
-function renderRegisterForm() {
-  const container = document.getElementById('auth-forms');
-  container.innerHTML = `
+function renderRegister() {
+  document.getElementById('auth-forms').innerHTML = `
     <form id="register-form" class="form">
-      <div class="input-group">
-        <label>Имя</label>
-        <input type="text" id="reg-name" placeholder="Виктор" required>
-      </div>
-      <div class="input-group">
-        <label>Тег</label>
-        <input type="text" id="reg-tag" placeholder="viktor_dev" required>
-      </div>
-      <div class="input-group">
-        <label>Пароль</label>
-        <input type="password" id="reg-password" placeholder="••••••" required>
-      </div>
-      <div class="input-group">
-        <label>Повторите пароль</label>
-        <input type="password" id="reg-password2" placeholder="••••••" required>
-      </div>
+      <div class="input-group"><label>Имя</label><input type="text" id="reg-name" required></div>
+      <div class="input-group"><label>Тег</label><input type="text" id="reg-tag" required></div>
+      <div class="input-group"><label>Пароль</label><input type="password" id="reg-pass" required></div>
+      <div class="input-group"><label>Повторите пароль</label><input type="password" id="reg-pass2" required></div>
       <div class="error-msg" id="reg-error"></div>
       <button type="submit" class="btn-primary">Зарегистрироваться</button>
-    </form>
-  `;
-  document.getElementById('register-form').addEventListener('submit', async (e) => {
+    </form>`;
+  document.getElementById('register-form').addEventListener('submit', e => {
     e.preventDefault();
     const name = document.getElementById('reg-name').value.trim();
     const tag = document.getElementById('reg-tag').value.trim();
-    const pass = document.getElementById('reg-password').value;
-    const pass2 = document.getElementById('reg-password2').value;
-    const err = document.getElementById('reg-error');
-    if (!name || !tag || !pass) {
-      err.textContent = 'Заполните все поля';
-      return;
-    }
-    if (pass !== pass2) {
-      err.textContent = 'Пароли не совпадают';
-      return;
-    }
-    if (pass.length < 4) {
-      err.textContent = 'Пароль должен быть длиннее 4 символов';
-      return;
-    }
-    if (findUserByTag(tag)) {
-      err.textContent = 'Тег уже занят';
-      return;
-    }
-    const newUser = {
-      id: genId(),
-      name,
-      tag,
-      password: pass,
-      avatar: 'default'
-    };
+    const pass = document.getElementById('reg-pass').value;
+    const pass2 = document.getElementById('reg-pass2').value;
+    if (!name || !tag || !pass) return document.getElementById('reg-error').textContent = 'Заполните все поля';
+    if (pass !== pass2) return document.getElementById('reg-error').textContent = 'Пароли не совпадают';
+    if (findUserByTag(tag)) return document.getElementById('reg-error').textContent = 'Тег занят';
+    const newUser = { id: genId(), name, tag, password: pass, avatar: null };
     saveUser(newUser);
-    currentUser = { id: newUser.id, name, tag, avatar: 'default' };
+    currentUser = { id: newUser.id, name, tag, avatar: null };
     setCurrentUser(currentUser);
-    goToMain();
+    createFavoriteChat(); // сразу создаём "Избранное"
+    goMain();
   });
 }
 
-function goToMain() {
+function goMain() {
   document.getElementById('loading-screen').style.display = 'none';
   showScreen('main');
   updateSidebar();
-  loadChatList();
-  initMainListeners();
+  renderChatList();
+  attachMainListeners();
 }
 
-// ========== ОСНОВНАЯ ЛОГИКА ==========
-function loadChatList() {
-  const container = document.getElementById('list-container');
-  container.innerHTML = '';
-  if (activeTab === 'chats') {
-    const chatIds = getUserChatIds(currentUser.id);
-    const chats = chatIds.map(id => getChat(id)).filter(c => c);
-    renderList('list-container', chats, 'chat');
-  } else if (activeTab === 'favorites') {
-    const favIds = getFavorites();
-    const favChats = favIds.map(id => getChat(id)).filter(c => c);
-    renderList('list-container', favChats, 'chat');
-  } else if (activeTab === 'users') {
-    const users = getUsers().filter(u => u.id !== currentUser.id);
-    renderList('list-container', users, 'user');
-  } else if (activeTab === 'wall') {
-    renderWall();
-    document.getElementById('message-input-area').style.display = 'flex';
-    document.getElementById('message-input').placeholder = 'Что нового?';
-    document.getElementById('chat-title').textContent = 'Общая стена';
-    document.getElementById('chat-subtitle').textContent = 'Последние записи';
-    activeChatId = null;
-  }
-}
-
-function initMainListeners() {
-  // Сворачивание сайдбара
+// ========== ОСНОВНЫЕ ОБРАБОТЧИКИ ==========
+function attachMainListeners() {
   document.getElementById('sidebar-toggle').addEventListener('click', () => {
-    const sidebar = document.getElementById('sidebar');
-    sidebar.classList.toggle('collapsed');
+    document.getElementById('sidebar').classList.toggle('collapsed');
   });
-  // Мобильный бэк
   document.getElementById('mobile-back-btn').addEventListener('click', () => {
     document.getElementById('sidebar').classList.remove('mobile-visible');
   });
-  // Открытие сайдбара на мобилке по свайпу/кнопке (добавим на аватар)
   document.getElementById('user-card').addEventListener('click', () => {
     if (window.innerWidth <= 768) {
       document.getElementById('sidebar').classList.toggle('mobile-visible');
+    } else {
+      showProfile(currentUser.id);
     }
   });
-  // Вкладки сайдбара
-  document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      activeTab = btn.dataset.tab;
-      loadChatList();
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      activeTab = b.dataset.tab;
+      renderChatList();
     });
   });
-  // Поиск по тегу
-  document.getElementById('search-input').addEventListener('input', (e) => {
+  document.getElementById('search-input').addEventListener('input', e => {
     const q = e.target.value.toLowerCase();
     document.querySelectorAll('.chat-item, .user-item').forEach(el => {
-      const text = el.textContent.toLowerCase();
-      el.style.display = text.includes(q) ? '' : 'none';
+      el.style.display = el.textContent.toLowerCase().includes(q) ? '' : 'none';
     });
   });
-  // Отправка сообщения
   document.getElementById('send-btn').addEventListener('click', sendMessage);
-  document.getElementById('message-input').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
+  document.getElementById('message-input').addEventListener('keypress', e => {
+    if (e.key === 'Enter') sendMessage();
   });
-  // Файлы
-  document.getElementById('file-upload-btn').addEventListener('click', () => {
-    document.getElementById('file-input').click();
+  document.getElementById('file-upload-btn').addEventListener('click', () => document.getElementById('file-input').click());
+  document.getElementById('file-input').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    pendingFile = { name: file.name, type: file.type };
+    document.getElementById('message-input').placeholder = `Файл: ${file.name}`;
   });
-  document.getElementById('file-input').addEventListener('change', handleFileSelect);
-  // Избранное
   document.getElementById('toggle-favorite').addEventListener('click', () => {
     if (!activeChatId) return;
-    if (isFavorite(activeChatId)) {
-      removeFavorite(activeChatId);
-    } else {
-      addFavorite(activeChatId);
-    }
-    document.getElementById('toggle-favorite').innerHTML = isFavorite(activeChatId) ? '<i class="fas fa-star"></i>' : '<i class="far fa-star"></i>';
-    loadChatList();
+    const chat = getChat(activeChatId);
+    chat.favorite = !chat.favorite;
+    saveChat(chat);
+    openChat(activeChatId);
+    renderChatList();
   });
-  // Выход
-  document.getElementById('logout-btn')?.addEventListener('click', () => {
-    logout();
-    location.reload();
+  document.getElementById('profile-btn-header').addEventListener('click', () => {
+    if (!activeChatId) return;
+    const chat = getChat(activeChatId);
+    const otherId = chat.members.find(m => m !== currentUser.id);
+    if (otherId) showProfile(otherId);
   });
-  // Добавим кнопку выхода в сайдбар, если её нет – создадим
-  if (!document.getElementById('logout-btn')) {
-    const btn = document.createElement('button');
-    btn.id = 'logout-btn';
-    btn.className = 'icon-btn';
-    btn.innerHTML = '<i class="fas fa-sign-out-alt"></i>';
-    btn.title = 'Выйти';
-    document.querySelector('.sidebar-header').appendChild(btn);
-    btn.addEventListener('click', () => {
-      logout();
-      location.reload();
+}
+
+function showProfile(uid) {
+  const user = uid === currentUser.id ? currentUser : getUsers().find(u => u.id === uid);
+  if (!user) return;
+  const profile = getProfile(uid);
+  const modal = document.getElementById('modal-container');
+  const overlay = document.getElementById('modal-overlay');
+  modal.innerHTML = `
+    <div style="text-align:center;">
+      <div style="background:${profile.banner || '#1b2127'}; height:120px; border-radius:12px; margin-bottom:-40px;"></div>
+      <div class="avatar" style="margin:0 auto; width:80px; height:80px; font-size:2rem; border:4px solid var(--bg-secondary);">
+        ${user.avatar ? `<img src="${user.avatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">` : '<i class="fas fa-user"></i>'}
+      </div>
+      <h2>${user.name}</h2>
+      <p>@${user.tag}</p>
+      <p style="color:var(--text-secondary);">${profile.bio || ''}</p>
+      ${uid === currentUser.id ? `
+        <div style="margin-top:1rem;">
+          <label>Баннер URL</label><input type="text" id="profile-banner" value="${profile.banner||''}" style="width:100%; margin-bottom:0.5rem;">
+          <label>Аватар URL</label><input type="text" id="profile-avatar" value="${user.avatar||''}" style="width:100%; margin-bottom:0.5rem;">
+          <label>О себе</label><input type="text" id="profile-bio" value="${profile.bio||''}" style="width:100%;">
+          <button class="btn-primary" id="save-profile">Сохранить</button>
+        </div>
+      ` : `<button class="btn-primary" id="start-chat-btn">Написать</button>`}
+    </div>
+  `;
+  overlay.style.display = 'block';
+  modal.style.display = 'block';
+  if (uid === currentUser.id) {
+    document.getElementById('save-profile').addEventListener('click', () => {
+      const banner = document.getElementById('profile-banner').value;
+      const ava = document.getElementById('profile-avatar').value;
+      const bio = document.getElementById('profile-bio').value;
+      currentUser.avatar = ava;
+      setCurrentUser(currentUser);
+      saveProfile(uid, { banner, bio });
+      updateSidebar();
+      overlay.style.display = 'none';
+      modal.style.display = 'none';
+      renderChatList();
+    });
+  } else {
+    document.getElementById('start-chat-btn').addEventListener('click', () => {
+      startPrivateChat(user);
+      overlay.style.display = 'none';
+      modal.style.display = 'none';
     });
   }
-  // Отправка на стене
-  document.getElementById('send-btn').addEventListener('click', () => {
-    if (activeChatId === null && activeTab === 'wall') {
-      const input = document.getElementById('message-input');
-      const text = input.value.trim();
-      if (!text) return;
-      addWallPost({
-        id: genId(),
-        authorName: currentUser.name,
-        content: text,
-        timestamp: Date.now(),
-        likes: 0
-      });
-      input.value = '';
-      renderWall();
-    }
-  });
+  overlay.addEventListener('click', () => { overlay.style.display = 'none'; modal.style.display = 'none'; });
 }
 
 // ========== СТАРТ ==========
@@ -500,8 +382,8 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('loading-screen').style.display = 'none';
     showScreen('main');
     updateSidebar();
-    loadChatList();
-    initMainListeners();
+    renderChatList();
+    attachMainListeners();
   } else {
     document.getElementById('loading-screen').style.display = 'none';
     showScreen('auth');
