@@ -4,22 +4,94 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>.drm — серебряный мессенджер</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div id="app">
     <!-- Загрузка -->
-    <div id="loading" class="loading-screen">.drm загружается...</div>
-    <!-- Экран авторизации (заполняется JS) -->
-    <div id="auth-container" class="screen"></div>
-    <!-- Основной экран (заполняется JS) -->
-    <div id="main-container" class="screen"></div>
+    <div id="loading-screen" class="loading-screen">
+      <div class="loader"></div>
+      <p>.drm</p>
+    </div>
+
+    <!-- Экран авторизации -->
+    <div id="auth-screen" class="screen">
+      <div class="auth-container">
+        <div class="auth-logo">
+          <i class="fas fa-user-circle"></i>
+          <h1>.drm</h1>
+          <p>серебряный мессенджер</p>
+        </div>
+        <div class="auth-tabs">
+          <button class="auth-tab active" data-tab="login">Вход</button>
+          <button class="auth-tab" data-tab="register">Регистрация</button>
+        </div>
+        <div id="auth-forms"></div>
+      </div>
+    </div>
+
+    <!-- Основной экран -->
+    <div id="main-screen" class="screen">
+      <div class="app-layout">
+        <!-- Боковая панель -->
+        <aside class="sidebar" id="sidebar">
+          <div class="sidebar-header">
+            <div class="user-card" id="user-card">
+              <div class="avatar"><i class="fas fa-user"></i></div>
+              <div class="user-details">
+                <span id="sidebar-username">Гость</span>
+                <span class="user-status">онлайн</span>
+              </div>
+            </div>
+            <button class="icon-btn sidebar-toggle" id="sidebar-toggle"><i class="fas fa-bars"></i></button>
+          </div>
+          <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="search-input" placeholder="Поиск по тегу...">
+          </div>
+          <nav class="sidebar-tabs">
+            <button class="tab-btn active" data-tab="chats">Чаты</button>
+            <button class="tab-btn" data-tab="favorites">Избран.</button>
+            <button class="tab-btn" data-tab="users">Люди</button>
+            <button class="tab-btn" data-tab="wall">Стена</button>
+          </nav>
+          <div class="list-container" id="list-container"></div>
+        </aside>
+
+        <!-- Область чата -->
+        <main class="chat-area" id="chat-area">
+          <div class="chat-header">
+            <button class="icon-btn mobile-back-btn" id="mobile-back-btn"><i class="fas fa-arrow-left"></i></button>
+            <div class="chat-info">
+              <div class="avatar"><i class="fas fa-user"></i></div>
+              <div>
+                <h3 id="chat-title">Выберите чат</h3>
+                <p id="chat-subtitle">...</p>
+              </div>
+            </div>
+            <div class="chat-actions">
+              <button class="icon-btn" id="toggle-favorite"><i class="far fa-star"></i></button>
+              <button class="icon-btn" id="file-upload-btn"><i class="fas fa-paperclip"></i></button>
+              <input type="file" id="file-input" hidden>
+            </div>
+          </div>
+          <div class="messages-container" id="messages-container">
+            <div class="empty-state"><i class="fas fa-comments"></i><p>Выберите чат или создайте новый</p></div>
+          </div>
+          <div class="message-input-area" id="message-input-area" style="display: none;">
+            <input type="text" id="message-input" placeholder="Сообщение...">
+            <button class="send-btn" id="send-btn"><i class="fas fa-paper-plane"></i></button>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <!-- Модальное окно -->
+    <div id="modal-overlay" class="modal-overlay"></div>
+    <div id="modal-container" class="modal-container"></div>
   </div>
-  <!-- Модальное окно (глобальное) -->
-  <div id="modal-overlay" class="modal-overlay"></div>
-  <div id="modal-container" class="modal-container"></div>
 
   <script src="app.js"></script>
 </body>
