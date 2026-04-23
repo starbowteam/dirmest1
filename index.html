@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>.drm — серебряный мессенджер</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Загрузка -->
+    <div id="loading" class="loading-screen">.drm загружается...</div>
+    <!-- Экран авторизации (заполняется JS) -->
+    <div id="auth-container" class="screen"></div>
+    <!-- Основной экран (заполняется JS) -->
+    <div id="main-container" class="screen"></div>
+  </div>
+  <!-- Модальное окно (глобальное) -->
+  <div id="modal-overlay" class="modal-overlay"></div>
+  <div id="modal-container" class="modal-container"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
